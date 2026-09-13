@@ -36,6 +36,7 @@ class OptimizerTests(TestCase):
         total = result["solar_kw"] + result["wind_kw"] + result["battery_kw"] + result["diesel_kw"]
         self.assertGreaterEqual(total, 100)
         self.assertEqual(result["diesel_kw"], 0)
+        self.assertEqual(result["recommendation"], "Hold diesel in reserve while renewables meet demand.")
 
 
 class CommunityRequestTests(TestCase):
@@ -65,7 +66,10 @@ class CommunityRequestTests(TestCase):
         record = CommunityDevelopmentRequest.objects.first()
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get("/api/community-requests/admin/").status_code, 200)
-        self.client.post(f"/api/community-requests/admin/{record.pk}/action/", {"status": "APPROVED"}, format="json")
-        converted = self.client.post(f"/api/community-requests/admin/{record.pk}/convert/")
-        self.assertEqual(converted.status_code, 201)
+        approved = self.client.post(f"/api/community-requests/admin/{record.pk}/action/", {"status": "APPROVED"}, format="json")
+        self.assertEqual(approved.status_code, 200)
         self.assertIsNotNone(CommunityDevelopmentRequest.objects.get(pk=record.pk).created_community_id)
+        community = CommunityDevelopmentRequest.objects.get(pk=record.pk).created_community
+        self.assertEqual(community.name, self.payload["community_name"])
+        converted = self.client.post(f"/api/community-requests/admin/{record.pk}/convert/")
+        self.assertEqual(converted.status_code, 200)

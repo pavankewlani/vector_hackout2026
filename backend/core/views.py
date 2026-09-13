@@ -44,7 +44,7 @@ def dashboard(request):
 def optimize(request):
     try:
         payload = json.loads(request.body or "{}")
-        result = dispatch_energy(payload["demand"], payload["solar_available"], payload["wind_available"], payload["battery_percent"], payload.get("battery_minimum", 20), payload.get("diesel_price", 92), payload.get("forecast_solar", 0), payload.get("forecast_wind", 0), payload.get("forecast_demand"), payload.get("battery_capacity_kw"))
+        result = dispatch_energy(payload["demand"], payload["solar_available"], payload["wind_available"], payload["battery_percent"], payload.get("battery_minimum", 20), payload.get("diesel_price", 92), payload.get("forecast_solar"), payload.get("forecast_wind"), payload.get("forecast_demand"), payload.get("battery_capacity_kw"))
         if payload.get("community_id"):
             community = visible_communities(request.user).filter(pk=payload["community_id"]).first()
             if community:
@@ -208,7 +208,19 @@ def community_request_action(request, request_id):
     record.admin_notes = payload.get("admin_notes", record.admin_notes)
     record.reviewed_by = request.user
     record.reviewed_at = timezone.now()
-    record.save(update_fields=["status", "admin_notes", "reviewed_by", "reviewed_at", "updated_at"])
+    if action_status == CommunityDevelopmentRequest.APPROVED and not record.created_community_id:
+        record.created_community = Community.objects.create(
+            name=record.community_name,
+            district=record.district,
+            state=record.state,
+            latitude=record.latitude or 0,
+            longitude=record.longitude or 0,
+            solar_capacity_kw=0,
+            wind_capacity_kw=0,
+            battery_capacity_kwh=0,
+            diesel_capacity_kw=0,
+        )
+    record.save(update_fields=["status", "admin_notes", "reviewed_by", "reviewed_at", "created_community", "updated_at"])
     return JsonResponse(CommunityDevelopmentRequestSerializer(record).data)
 
 
