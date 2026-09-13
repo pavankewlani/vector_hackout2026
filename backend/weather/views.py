@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 from core.models import Community, WeatherForecast, WeatherReading
 from .services.open_meteo import fetch_forecast, fetch_historical_weather
+from forecasting.services.renewable_forecast import renewable_forecast
 from core.access import community_access_required
 
 def _community_or_404(community_id):
@@ -41,3 +42,15 @@ def history(request, community_id):
         return JsonResponse({"error": "Community not found."}, status=404)
     except Exception:
         return JsonResponse({"error": "Historical weather unavailable."}, status=503)
+
+
+@require_GET
+@community_access_required
+def renewable(request, community_id):
+    try:
+        community = _community_or_404(community_id)
+        return JsonResponse({"community": community.name, "forecast": renewable_forecast(community)})
+    except Community.DoesNotExist:
+        return JsonResponse({"error": "Community not found."}, status=404)
+    except Exception:
+        return JsonResponse({"error": "Renewable generation forecast unavailable."}, status=503)

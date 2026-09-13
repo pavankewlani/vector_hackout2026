@@ -49,3 +49,14 @@ def community_access_required(view):
             return JsonResponse({"detail": "You do not have access to this community."}, status=403)
         return view(request, community_id, *args, **kwargs)
     return wrapped
+
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped(request, *args, **kwargs):
+        if not authenticate_request(request).is_authenticated:
+            return JsonResponse({"detail": "Authentication credentials were not provided."}, status=401)
+        if profile_for(request.user).role != UserProfile.ADMIN:
+            return JsonResponse({"detail": "Administrator access is required."}, status=403)
+        return view(request, *args, **kwargs)
+    return wrapped

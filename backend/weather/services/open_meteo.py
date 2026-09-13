@@ -14,7 +14,7 @@ def _validate(community, start, end):
 
 def fetch_historical_weather(community: Community, start: date, end: date):
     _validate(community, start, end)
-    response = requests.get(f"{settings.OPEN_METEO_BASE_URL}/archive", params={"latitude": community.latitude, "longitude": community.longitude, "start_date": start.isoformat(), "end_date": end.isoformat(), "hourly": HOURLY, "timezone": "UTC"}, timeout=20)
+    response = requests.get(settings.OPEN_METEO_ARCHIVE_URL, params={"latitude": community.latitude, "longitude": community.longitude, "start_date": start.isoformat(), "end_date": end.isoformat(), "hourly": HOURLY, "timezone": "UTC"}, timeout=20)
     response.raise_for_status()
     payload = response.json().get("hourly", {})
     times = payload.get("time", [])
